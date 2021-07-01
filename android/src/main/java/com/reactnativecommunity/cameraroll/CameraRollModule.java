@@ -571,6 +571,31 @@ public class CameraRollModule extends ReactContextBaseJavaModule {
     node.putDouble("modified", media.getLong(dateModifiedIndex));
   }
 
+  public static int getImageRotation(Uri imageUri) {
+    try {
+      ExifInterface exif = new ExifInterface(imageUri.getPath());
+      int rotation = exif.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_UNDEFINED);
+
+      if (rotation == ExifInterface.ORIENTATION_UNDEFINED)
+        return -1;
+      else return exifToDegrees(rotation);
+    } catch (IOException e) {
+      return -1;
+    }
+  }
+
+  private static int exifToDegrees(int exifOrientation) {
+    if (exifOrientation == ExifInterface.ORIENTATION_ROTATE_90) {
+      return 90;
+    } else if (exifOrientation == ExifInterface.ORIENTATION_ROTATE_180) {
+      return 180;
+    } else if (exifOrientation == ExifInterface.ORIENTATION_ROTATE_270) {
+      return 270;
+    } else {
+      return 0;
+    }
+  }
+
   /**
    * @return Whether we successfully fetched all the information about the image that we were asked
    * to include
@@ -616,7 +641,11 @@ public class CameraRollModule extends ReactContextBaseJavaModule {
     }
 
     if (includeOrientation) {
-      image.putInt("orientation", media.getInt(orientationIndex));
+      int orientation = getImageRotation(photoUri);
+      if (orientation == -1) {
+        orientation = media.getInt(orientationIndex);
+      }
+      image.putInt("orientation", orientation);
     } else {
       image.putNull("orientation");
     }
